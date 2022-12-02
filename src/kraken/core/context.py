@@ -183,7 +183,7 @@ class Context(MetadataContainer, Currentable["Context"]):
                 parts.pop(0)
             while parts:
                 project_children = project.children()
-                if parts[0] in project_children.values():
+                if parts[0] in project_children:
                     project = project_children[parts.pop(0)]
                 else:
                     break

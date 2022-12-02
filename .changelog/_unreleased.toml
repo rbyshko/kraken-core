@@ -1,0 +1,5 @@
+[[entries]]
+id = "365895d4-76a3-41be-91f3-79ee45426e42"
+type = "fix"
+description = "Fix bug where task resolution tries to equate strings and projects"
+author = "@tetigi"
