@@ -35,3 +35,4 @@ jobs:
     - uses: Cecilapp/GitHub-Pages-deploy@v3
       env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
       with: { email: rosensteinniklas@gmail.com, build_dir: docs/_site }
+      if: ${{ github.ref == 'refs/heads/develop' }}
