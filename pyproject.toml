@@ -39,6 +39,7 @@ flake8 = "*"
 isort = "*"
 mypy = "*"
 pytest = "*"
+types-Deprecated = "^1.2.9"
 types-setuptools = "^57.4.18"
 types-termcolor = "^1.1.5"
 
