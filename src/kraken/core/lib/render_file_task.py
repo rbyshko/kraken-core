@@ -55,7 +55,6 @@ class RenderFileTask(Task):
     # Task
 
     def finalize(self) -> None:
-        self.file.setmap(lambda path: self.project.directory / path)
         super().finalize()
 
     def prepare(self) -> TaskStatus | None:
