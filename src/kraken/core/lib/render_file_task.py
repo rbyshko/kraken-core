@@ -54,9 +54,6 @@ class RenderFileTask(Task):
 
     # Task
 
-    def finalize(self) -> None:
-        super().finalize()
-
     def prepare(self) -> TaskStatus | None:
         from kraken.core.lib.check_file_contents_task import as_bytes
 

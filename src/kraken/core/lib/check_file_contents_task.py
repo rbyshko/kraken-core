@@ -28,10 +28,6 @@ class CheckFileContentsTask(Task):
 
     # Task
 
-    def finalize(self) -> None:
-        self.file.setmap(lambda path: self.project.directory / path)
-        super().finalize()
-
     def prepare(self) -> TaskStatus:
         return self.render_prepare.get()
 
