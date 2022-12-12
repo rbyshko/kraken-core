@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional, Type, TypeVar, cast
 
+from deprecated import deprecated
+
 from kraken.core.base import Currentable, MetadataContainer
 from kraken.core.task import GroupTask, Task, TaskSet
 
@@ -91,8 +93,37 @@ class Project(MetadataContainer, Currentable["Project"]):
     def tasks(self) -> Mapping[str, Task]:
         return {t.name: t for t in self._members.values() if isinstance(t, Task)}
 
+    @deprecated(reason="use Project.subprojects() or Project.subproject() instead")
     def children(self) -> Mapping[str, Project]:
+        return self.subprojects()
+
+    def subprojects(self) -> Mapping[str, Project]:
         return {p.name: p for p in self._members.values() if isinstance(p, Project)}
+
+    def subproject(self, name: str) -> Project:
+        """
+        Returns the subproject of this project that has the specified *name*. If no such subproject exists yet,
+        it will be created and loaded, however a folder of that *name* must exist. If the folder contains a Kraken
+        build script, that script will also be loaded.
+        """
+
+        obj = self._members.get(name)
+        if obj is not None:
+            if not isinstance(obj, Project):
+                raise ValueError(f"{self.path}:{name} does not refer to a project (got {type(obj).__name__} instead)")
+            return obj
+
+        directory = self.directory / name
+        if not directory.is_dir():
+            raise FileNotFoundError(
+                f"{self.path}:{name} cannot be loaded because the directory {directory} does not exist"
+            )
+
+        project = self.context.load_project(directory, self, require_buildscript=False)
+        assert name in self._members
+        assert self._members[name] is project
+
+        return project
 
     def resolve_tasks(self, tasks: str | Task | Iterable[str | Task]) -> TaskSet:
         """Resolve tasks relative to the current project."""
@@ -134,6 +165,12 @@ class Project(MetadataContainer, Currentable["Project"]):
         if project.parent is not self:
             raise ValueError(f"{project}.parent mismatch")
         self._members[project.name] = project
+
+    def remove_child(self, project: Project) -> None:
+        assert project.parent is self
+        assert self._members[project.name] is project
+
+        del self._members[project.name]
 
     def do(
         self,

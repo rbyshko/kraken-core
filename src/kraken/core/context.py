@@ -104,6 +104,7 @@ class Context(MetadataContainer, Currentable["Context"]):
         self,
         directory: Path,
         parent: Project | None = None,
+        require_buildscript: bool = True,
     ) -> Project:
         """Loads a project from a file or directory.
 
@@ -113,17 +114,41 @@ class Context(MetadataContainer, Currentable["Context"]):
                 must not have been initialized yet and the loaded project will be initialize it.
                 If the root project is initialized but no parent is specified, an error will be
                 raised.
+            require_buildscript: If set to `True`, a build script must exist in *directory*.
+                Otherwise, it will be accepted if no build script exists in the directory.
         """
 
+        from kraken.core.loader import ProjectHasNoBuildScriptError, ProjectLoaderError
         from kraken.core.project import Project
 
+        has_root_project = self._root_project is not None
         project = Project(directory.name, directory, parent, self)
-        self.trigger(ContextEvent.Type.on_project_init, project)
-        with self.as_current():
-            if self._root_project is None:
-                self._root_project = project
-            self.project_loader.load_project(project)
-        self.trigger(ContextEvent.Type.on_project_loaded, project)
+        try:
+            if parent:
+                parent.add_child(project)
+
+            self.trigger(ContextEvent.Type.on_project_init, project)
+
+            with self.as_current():
+                if not has_root_project:
+                    self._root_project = project
+                try:
+                    self.project_loader.load_project(project)
+                except ProjectHasNoBuildScriptError as exc:
+                    if require_buildscript or exc.project is not project:
+                        raise
+
+            self.trigger(ContextEvent.Type.on_project_loaded, project)
+
+        except ProjectLoaderError as exc:
+            if exc.project is project:
+                # Revert changes if the project that the error occurred with is the current project.
+                if not has_root_project:
+                    self._root_project = None
+                if parent:
+                    parent.remove_child(project)
+            raise
+
         return project
 
     def iter_projects(self) -> Iterator[Project]:
