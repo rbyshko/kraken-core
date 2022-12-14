@@ -57,17 +57,17 @@ kraken = "kraken.core.cli.main:main"
 typed = true
 
 [tool.slap.test]
-black = "black --check src/"
+black = "black --check src/ example/"
 check = "slap check"
-flake8 = "flake8 src/"
-isort = "isort --check-only src/"
-mypy = "dmypy run src/"
+flake8 = "flake8 src/ example/"
+isort = "isort --check-only src/ example/"
+mypy = "dmypy run src/ example/"
 pytest = "pytest src/tests/ -vv"
 
 [tool.slap.run]
 "docs:build" = "cd docs && novella --base-url kraken-core/"
 "docs:dev" = "cd docs && novella --serve"
-fmt = "black src/ && isort src/"
+fmt = "black src/ example/ && isort src/ example/"
 
 [tool.mypy]
 explicit_package_bases = true
