@@ -1,0 +1,5 @@
+[[entries]]
+id = "81e97f40-0afa-45de-b7be-0a0e763bb564"
+type = "fix"
+description = "fix an issue where using the `--resume` flag with a build script that does not call `kraken.common.buildscript()` would error"
+author = "@NiklasRosenstein"

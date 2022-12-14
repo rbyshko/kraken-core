@@ -133,7 +133,7 @@ def _load_build_state(
         # this if we want to resume from a serialized build state. When we need to execute the full script
         # anyway, we can rely on a callback that we register for when buildscript() is called to update
         # the `sys.path`, which avoids that we execute the script twice.
-        if not requirements and graph_options.resume:
+        if not requirements and graph_options.resume and runner.has_buildscript_call(script):
             with BuildscriptMetadata.capture() as future:
                 runner.execute_script(script, {})
             assert future.done()
