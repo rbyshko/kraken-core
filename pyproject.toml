@@ -11,7 +11,7 @@ license = "MIT"
 name = "kraken-core"
 packages = [{include = "kraken/core", from = "src"}]
 readme = "readme.md"
-version = "0.11.0"
+version = "0.11.1"
 
 [tool.poetry.urls]
 # "Bug Tracker" = ""
