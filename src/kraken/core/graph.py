@@ -218,6 +218,7 @@ class TaskGraph(Graph):
         graph = TaskGraph(self.context, parent=self)
         unrequired_tasks = set(graph._digraph.nodes) - graph._get_required_tasks(goals)
         graph._remove_nodes_keep_transitive_edges(unrequired_tasks)
+        graph.results_from(self)
         return graph
 
     def reduce(self, keep_explicit: bool = False) -> TaskGraph:
@@ -244,6 +245,9 @@ class TaskGraph(Graph):
         """Merge the results from the *other* graph into this graph. Only takes the results of tasks that are
         known to the graph. If the same task has a result in both graphs, and one task result is not successful,
         the not successful result is preferred."""
+
+        self._results = {**other._results, **self._results}
+        self._completed_tasks.update(other._completed_tasks)
 
         for task in self.tasks():
             status_a = self._results.get(task.path)
@@ -340,7 +344,9 @@ class TaskGraph(Graph):
         return result
 
     def get_task(self, task_path: str) -> Task:
-        return not_none(self._get_task(task_path))
+        if self._parent is None:
+            return not_none(self._get_task(task_path))
+        return self.root.get_task(task_path)
 
     def set_status(self, task: Task, status: TaskStatus, *, _force: bool = False) -> None:
         """Sets the status of a task, marking it as executed."""

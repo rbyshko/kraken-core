@@ -186,19 +186,17 @@ def _load_build_state(
             lambda: serialize.save_build_state(build_options.state_dir, build_options.state_name, not_none(graph))
         )
 
-    # Trim the graph down to the selected or default tasks.
-    selected = context.resolve_tasks(graph_options.tasks or None)
-    if graph_options.all:
-        graph = graph.root
-    else:
-        graph = graph.root.trim(selected)
-
     # Mark tasks that were explicitly selected on the command-line as such. Tasks may alter their behaviour
     # based on whether they were explicitly selected or not.
+    selected = context.resolve_tasks(graph_options.tasks or None)
     for task in graph.root.tasks():
         task.selected = False
     for task in selected:
         task.selected = True
+
+    # Trim the graph down to the selected or default tasks.
+    if not graph_options.all:
+        graph = graph.trim(selected)
 
     return context, graph
 
