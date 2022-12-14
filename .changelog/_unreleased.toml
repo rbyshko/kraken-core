@@ -9,3 +9,9 @@ id = "93bbfbb8-d027-4603-92c2-6fadd0011dab"
 type = "fix"
 description = "fix build resumption using the `--resume` flag by ensuring the build results are transferred to the graph resulting from `TaskGraph.trim()`"
 author = "@NiklasRosenstein"
+
+[[entries]]
+id = "a84e9a0e-6ee3-4f36-b659-441debd63533"
+type = "tests"
+description = "add integration test for build resumption using the `--resume` flag"
+author = "@NiklasRosenstein"
