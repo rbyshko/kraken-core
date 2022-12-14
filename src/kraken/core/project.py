@@ -15,6 +15,15 @@ T = TypeVar("T")
 T_Task = TypeVar("T_Task", bound="Task")
 
 
+class ProjectLoaderError(Exception):
+    def __init__(self, project: Project, message: str) -> None:
+        self.project = project
+        self.message = message
+
+    def __str__(self) -> str:
+        return f"[{self.project.path}] {self.message}"
+
+
 class Project(MetadataContainer, Currentable["Project"]):
     """A project consolidates tasks related to a directory on the filesystem."""
 
@@ -124,6 +133,13 @@ class Project(MetadataContainer, Currentable["Project"]):
         assert self._members[name] is project
 
         return project
+
+    def has_subproject(self, name: str) -> bool:
+        """
+        Returns `True` if *name* refers to a subproject that exists in the current project.
+        """
+
+        return isinstance(self._members.get(name), Project)
 
     def resolve_tasks(self, tasks: str | Task | Iterable[str | Task]) -> TaskSet:
         """Resolve tasks relative to the current project."""

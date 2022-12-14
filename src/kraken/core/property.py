@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Any, Callable, ClassVar, Iterable, Mapping, Sequence, TypeVar, cast
 
 import typeapi
-from nr.stream import NotSet, Supplier
+from kraken.common import NotSet
+from nr.stream import Supplier
 
 T = TypeVar("T")
 U = TypeVar("U")

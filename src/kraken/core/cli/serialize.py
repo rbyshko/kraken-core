@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Iterable
 
 import dill  # type: ignore[import]
+from kraken.common import pluralize
 
 from kraken.core import Context, TaskGraph
-from kraken.core.util.text import pluralize
 
 logger = logging.getLogger(__name__)
 state_file_regex = r"^state-.*\.dill$"

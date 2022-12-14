@@ -3,8 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Union
 
+from kraken.common.path import try_relative_to
+
 from kraken.core import Project, Property, Supplier, Task, TaskStatus
-from kraken.core.util.path import try_relative_to
 
 from .check_file_contents_task import as_bytes
 

@@ -10,6 +10,14 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NoReturn
 
+from kraken.common import (
+    BuildscriptMetadata,
+    RequirementSpec,
+    appending_to_sys_path,
+    deprecated_get_requirement_spec_from_file_header,
+    find_build_script,
+)
+
 if TYPE_CHECKING:
     from kraken.core import Context, Property, Task, TaskGraph
     from kraken.core.cli.option_sets import BuildOptions, GraphOptions, RunOptions, VizOptions
@@ -23,8 +31,9 @@ print = partial(builtins.print, flush=True)
 def _get_argument_parser(prog: str) -> argparse.ArgumentParser:
     import textwrap
 
-    from kraken.core.cli.option_sets import BuildOptions, GraphOptions, LoggingOptions, RunOptions, VizOptions
-    from kraken.core.util.argparse import propagate_formatter_to_subparser
+    from kraken.common import LoggingOptions, propagate_argparse_formatter_to_subparser
+
+    from kraken.core.cli.option_sets import BuildOptions, GraphOptions, RunOptions, VizOptions
 
     parser = argparse.ArgumentParser(
         prog,
@@ -72,7 +81,7 @@ def _get_argument_parser(prog: str) -> argparse.ArgumentParser:
     env = query_subparsers.add_parser("env", description="produce a JSON file of the Python environment distributions")
     LoggingOptions.add_to_parser(env)
 
-    propagate_formatter_to_subparser(parser)
+    propagate_argparse_formatter_to_subparser(parser)
     return parser
 
 
@@ -81,57 +90,111 @@ def _load_build_state(
     build_options: BuildOptions,
     graph_options: GraphOptions,
 ) -> tuple[Context, TaskGraph]:
+    """
+    This function loads the build state for the current working directory; which involves either executing the
+    Kraken build script or loading one or more state files from their serialized form on disk.
+    """
+
+    from kraken.common import not_none
+
     from kraken.core import Context, TaskGraph
     from kraken.core.cli import serialize
-    from kraken.core.util.helpers import not_none
 
     if graph_options.restart and not graph_options.resume:
         raise ValueError("the --restart option requires the --resume flag")
 
-    # Read the pythonpath from the build script file and add it to sys.path.
-    build_script = build_options.project_dir / BUILD_SCRIPT
-    if build_script.is_file():
-        from kraken.core.util.importing import append_to_sys_path
-        from kraken.core.util.requirements import parse_requirements_from_python_script
+    runner, script = find_build_script(build_options.project_dir)
+    if not runner:
 
-        with build_script.open() as fp:
-            pythonpath = parse_requirements_from_python_script(fp).pythonpath
-        if BUILD_SUPPORT_DIRECTORY not in pythonpath:
-            pythonpath = (*pythonpath, BUILD_SUPPORT_DIRECTORY)
-        exit_stack.enter_context(append_to_sys_path(pythonpath))
+        # We are OKAY with resuming a build from serialized state files even if no build script exists in the
+        # current working directory; this is a feature that is often useful for debugging purposes when you want
+        # to inspect the final state of a build, like from CI.
+        if not graph_options.resume:
+            raise ValueError(f'no Kraken build script found in the directory "{build_options.project_dir}"')
+    else:
+        assert script is not None
+
+    # Before we can deserialize the build state, we must add the additional paths to `sys.path` that are defined
+    # in by the script using the buildscript() function, or for backwards compatibility, in the file header as
+    # comments.
+
+    # Note that if we are simply going to execute the build script (i.e. not deserializing from state files),
+    # we can rely on the buildscript() call in the script to update `sys.path`; but if the deprecated file header
+    # is used to define the pythonpath we still need to parse it explicitly.
+
+    if script:
+        assert runner is not None
+
+        # Attempt to read the requirement spec in the deprecated format first.
+        requirements = deprecated_get_requirement_spec_from_file_header(script)
+
+        # If the file does not have the deprecated requirement spec file header as comments, we instead want
+        # to capture the buildscript() call by tenatively executing the script. However, we only need to do
+        # this if we want to resume from a serialized build state. When we need to execute the full script
+        # anyway, we can rely on a callback that we register for when buildscript() is called to update
+        # the `sys.path`, which avoids that we execute the script twice.
+        if not requirements and graph_options.resume:
+            with BuildscriptMetadata.capture() as future:
+                runner.execute_script(script, {})
+            assert future.done()
+            requirements = RequirementSpec.from_metadata(future.result())
+
+        # Update `sys.path` with the python path from the requirement spec, if any.
+        if requirements:
+            exit_stack.enter_context(appending_to_sys_path(requirements.pythonpath))
 
     context: Context | None = None
+
+    # Deserialize the build state from files in the build state directory (+ extra dirs) if that is what
+    # the user requested.
     if graph_options.resume:
         context, graph = serialize.load_build_state([build_options.state_dir] + build_options.additional_state_dirs)
         if not graph:
             raise ValueError("cannot --resume without build state")
         if graph and graph_options.restart:
             graph.restart()
+        assert context is not None
 
-    if context is None:
+    # Otherwise, we need to execute the build script.
+    else:
+
         if build_options.no_load_project:
             raise ValueError(
                 "no existing build state was loaded; typically that would load the root project "
                 "but --no-load-project was specified."
             )
+
+        # Register a callback for when the buildscript calls the buildscript() method. Any requirements passed
+        # to the function are already expected to have been handled with by the Kraken wrapper, but we need to
+        # handle the additions to `sys.path` here.
+        def _buildscript_metadata_callback(metadata: BuildscriptMetadata) -> None:
+            requirements = RequirementSpec.from_metadata(metadata)
+            exit_stack.enter_context(appending_to_sys_path(requirements.pythonpath))
+
         context = Context(build_options.build_dir)
-        context.load_project(build_options.project_dir)
-        context.finalize()
-        graph = TaskGraph(context)
+
+        with BuildscriptMetadata.callback(_buildscript_metadata_callback):
+            context.load_project(build_options.project_dir)
+            context.finalize()
+            graph = TaskGraph(context)
 
     assert graph is not None
+
+    # Serialize the build graph, even on failure, at the end of the build.
     if not graph_options.no_save:
         exit_stack.callback(
             lambda: serialize.save_build_state(build_options.state_dir, build_options.state_name, not_none(graph))
         )
 
+    # Trim the graph down to the selected or default tasks.
     selected = context.resolve_tasks(graph_options.tasks or None)
-
     if graph_options.all:
         graph = graph.root
     else:
         graph = graph.root.trim(selected)
 
+    # Mark tasks that were explicitly selected on the command-line as such. Tasks may alter their behaviour
+    # based on whether they were explicitly selected or not.
     for task in graph.root.tasks():
         task.selected = False
     for task in selected:
@@ -184,11 +247,11 @@ def run(
 def ls(graph: TaskGraph) -> None:
     import textwrap
 
+    from kraken.common import get_terminal_width
     from termcolor import colored
 
     from kraken.core import GroupTask
     from kraken.core.cli.executor import status_to_text
-    from kraken.core.util.term import get_terminal_width
 
     goal_tasks = set(graph.tasks(goals=True))
     longest_name = max(map(len, (t.path for t in graph.tasks()))) + 1
@@ -347,14 +410,16 @@ def visualize(graph: TaskGraph, viz_options: VizOptions) -> None:
 def env() -> None:
     import json
 
-    from nr.python.environment.distributions import get_distributions
+    from kraken.common.pyenv import get_distributions
 
     dists = sorted(get_distributions().values(), key=lambda dist: dist.name)
     print(json.dumps([dist.to_json() for dist in dists], sort_keys=True))
 
 
 def main_internal(prog: str, argv: list[str] | None) -> NoReturn:
-    from kraken.core.cli.option_sets import BuildOptions, GraphOptions, LoggingOptions, RunOptions, VizOptions
+    from kraken.common import LoggingOptions
+
+    from kraken.core.cli.option_sets import BuildOptions, GraphOptions, RunOptions, VizOptions
 
     parser = _get_argument_parser(prog)
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)

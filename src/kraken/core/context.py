@@ -19,6 +19,7 @@ from typing import (
     overload,
 )
 
+from kraken.common import ScriptRunner
 from typing_extensions import TypeAlias
 
 from kraken.core.base import Currentable, MetadataContainer
@@ -27,7 +28,6 @@ from kraken.core.executor import GraphExecutorObserver
 if TYPE_CHECKING:
     from kraken.core.executor import GraphExecutor
     from kraken.core.graph import TaskGraph
-    from kraken.core.loader import ProjectLoader
     from kraken.core.project import Project
     from kraken.core.task import Task
 
@@ -62,14 +62,11 @@ class Context(MetadataContainer, Currentable["Context"]):
     def __init__(
         self,
         build_directory: Path,
-        project_loader: ProjectLoader | None = None,
         executor: GraphExecutor | None = None,
         observer: GraphExecutorObserver | None = None,
     ) -> None:
         """
         :param build_directory: The directory in which all files generated durin the build should be stored.
-        :param project_loader: The object to use to load projects from a directory. If not specified, a
-            :class:`PythonScriptProjectLoader` will be used.
         :param executor: The executor to use when the graph is executed.
         :param observer: The executro observer to use when the graph is executed.
         """
@@ -79,11 +76,9 @@ class Context(MetadataContainer, Currentable["Context"]):
             DefaultPrintingExecutorObserver,
             DefaultTaskExecutor,
         )
-        from kraken.core.loader import PythonScriptProjectLoader
 
         super().__init__()
         self.build_directory = build_directory
-        self.project_loader = project_loader or PythonScriptProjectLoader()
         self.executor = executor or DefaultGraphExecutor(DefaultTaskExecutor())
         self.observer = observer or DefaultPrintingExecutorObserver()
         self._finalized: bool = False
@@ -105,21 +100,33 @@ class Context(MetadataContainer, Currentable["Context"]):
         directory: Path,
         parent: Project | None = None,
         require_buildscript: bool = True,
+        runner: ScriptRunner | None = None,
+        script: Path | None = None,
     ) -> Project:
         """Loads a project from a file or directory.
 
-        Args:
-            directory: The directory to load the project from.
-            parent: The parent project. If no parent is specified, then the :attr:`root_project`
-                must not have been initialized yet and the loaded project will be initialize it.
-                If the root project is initialized but no parent is specified, an error will be
-                raised.
-            require_buildscript: If set to `True`, a build script must exist in *directory*.
-                Otherwise, it will be accepted if no build script exists in the directory.
+        :param directory: The directory to load the project from.
+        :param parent: The parent project. If no parent is specified, then the :attr:`root_project`
+            must not have been initialized yet and the loaded project will be initialize it.
+            If the root project is initialized but no parent is specified, an error will be
+            raised.
+        :param require_buildscript: If set to `True`, a build script must exist in *directory*.
+            Otherwise, it will be accepted if no build script exists in the directory.
+        :param runner: If the :class:`ScriptRunner` for this project is already known, it can be passed here.
+        :param script: If the script to load for the project is already known, it can be passed here. Cannot be
+            specified without a *runner*.
         """
 
-        from kraken.core.loader import ProjectHasNoBuildScriptError, ProjectLoaderError
-        from kraken.core.project import Project
+        from kraken.common import find_build_script
+
+        from kraken.core.project import Project, ProjectLoaderError
+
+        if not runner:
+            if script is not None:
+                raise ValueError("cannot specify `script` parameter without a `runner` parameter")
+            runner, script = find_build_script(directory)
+        if not script and runner:
+            script = runner.find_script(directory)
 
         has_root_project = self._root_project is not None
         project = Project(directory.name, directory, parent, self)
@@ -129,14 +136,15 @@ class Context(MetadataContainer, Currentable["Context"]):
 
             self.trigger(ContextEvent.Type.on_project_init, project)
 
-            with self.as_current():
+            with self.as_current(), project.as_current():
                 if not has_root_project:
                     self._root_project = project
-                try:
-                    self.project_loader.load_project(project)
-                except ProjectHasNoBuildScriptError as exc:
-                    if require_buildscript or exc.project is not project:
-                        raise
+
+                if script is None and require_buildscript:
+                    raise ProjectLoaderError(project, f"no buildscript found for {project}")
+                if script is not None:
+                    assert runner is not None
+                    runner.execute_script(script, {"project": project})
 
             self.trigger(ContextEvent.Type.on_project_loaded, project)
 
@@ -156,7 +164,7 @@ class Context(MetadataContainer, Currentable["Context"]):
 
         def _recurse(project: Project) -> Iterator[Project]:
             yield project
-            for child_project in project.children().values():
+            for child_project in project.subprojects().values():
                 yield from _recurse(child_project)
 
         yield from _recurse(self.root_project)
@@ -207,9 +215,8 @@ class Context(MetadataContainer, Currentable["Context"]):
                 project = self.root_project
                 parts.pop(0)
             while parts:
-                project_children = project.children()
-                if parts[0] in project_children:
-                    project = project_children[parts.pop(0)]
+                if project.has_subproject(parts[0]):
+                    project = project.subproject(parts.pop(0))
                 else:
                     break
 
