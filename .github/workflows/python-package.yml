@@ -21,7 +21,7 @@ jobs:
 
     # Test the example. Need docker for that.
     - uses: docker/setup-buildx-action@v2
-    - run: cd src/example && kraken run build
+    - run: cd example && kraken run build
 
   docs:
     runs-on: ubuntu-latest
