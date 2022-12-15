@@ -103,6 +103,21 @@ def _load_build_state(
     if graph_options.restart and not graph_options.resume:
         raise ValueError("the --restart option requires the --resume flag")
 
+    # Calculate the main subproject based on the project directory.
+    root_directory = build_options.project_dir.absolute().resolve()
+    try:
+        subproject_directory = Path.cwd().relative_to(root_directory)
+    except ValueError:
+        raise ValueError(
+            f"-p,--project-dir must be a parent directory of {Path.cwd()}, not a sibling/subdirectory "
+            f"(got: {build_options.project_dir})"
+        )
+
+    # For consistency, we always act as if Kraken was run from the project root directory.
+    # Using the `subproject_directory`, we later fitler down which tasks are selected / how relative
+    # task references on the CLI are resolved.
+    os.chdir(root_directory)
+
     project_info = CurrentDirectoryProjectFinder.default().find_project(Path.cwd())
     if not project_info:
 
@@ -170,7 +185,7 @@ def _load_build_state(
         context = Context(build_options.build_dir)
 
         with BuildscriptMetadata.callback(_buildscript_metadata_callback):
-            context.load_project(build_options.project_dir)
+            context.load_project(Path.cwd())
             context.finalize()
             graph = TaskGraph(context)
 
@@ -182,9 +197,13 @@ def _load_build_state(
             lambda: serialize.save_build_state(build_options.state_dir, build_options.state_name, not_none(graph))
         )
 
+    # Find the project from which we'll resolve relative task references based on the original current working
+    # directory relative to the project root directory.
+    subproject = context.get_project(":" + ":".join(subproject_directory.parts))
+
     # Mark tasks that were explicitly selected on the command-line as such. Tasks may alter their behaviour
     # based on whether they were explicitly selected or not.
-    selected = context.resolve_tasks(graph_options.tasks or None)
+    selected = context.resolve_tasks(graph_options.tasks or None, relative_to=subproject)
     for task in graph.root.tasks():
         task.selected = False
     for task in selected:

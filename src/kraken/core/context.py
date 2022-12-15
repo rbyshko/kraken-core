@@ -166,7 +166,7 @@ class Context(MetadataContainer, Currentable["Context"]):
 
         return project
 
-    def iter_projects(self) -> Iterator[Project]:
+    def iter_projects(self, relative_to: Project | None = None) -> Iterator[Project]:
         """Iterates over all projects in the context."""
 
         def _recurse(project: Project) -> Iterator[Project]:
@@ -174,7 +174,29 @@ class Context(MetadataContainer, Currentable["Context"]):
             for child_project in project.subprojects().values():
                 yield from _recurse(child_project)
 
-        yield from _recurse(self.root_project)
+        yield from _recurse(relative_to or self.root_project)
+
+    def get_project(self, path: str, relative_to: Project | None = None) -> Project:
+        """Resolve a project by its absolute or relative path.
+
+        A path is a `:` separated string, where `:` represents the root project. Relative to the root project,
+        a relative and absolute path will behave the same."""
+
+        if path.startswith(":"):
+            relative_to = self.root_project
+            path = path[1:]
+        else:
+            relative_to = relative_to or self.root_project
+
+        cumulative_path = relative_to.path
+        for part in filter(None, path.split(":")):
+            cumulative_path += ":" + part
+            project = relative_to.subproject(part, load=False)
+            if not project:
+                raise ValueError(f"project {cumulative_path} does not exist")
+            relative_to = project
+
+        return relative_to
 
     def resolve_tasks(self, targets: list[str] | None, relative_to: Project | None = None) -> list[Task]:
         """Resolve the given project or task references in *targets* relative to the specified project, or by
@@ -188,63 +210,38 @@ class Context(MetadataContainer, Currentable["Context"]):
 
         if targets is None:
             # Return all default tasks.
-            return [task for project in self.iter_projects() for task in project.tasks().values() if task.default]
+            return [
+                task for project in self.iter_projects(relative_to) for task in project.tasks().values() if task.default
+            ]
 
         tasks: list[Task] = []
-        count = 0
         target: str
 
-        def _check_matched() -> None:
-            nonlocal count
-            if count == len(tasks):
-                raise ValueError(f"no tasks matched selector {target!r}")
-            count = len(tasks)
-
         for target in targets:
+
+            # Target references followed by a question mark are optional, they are allowed to not resolve.
             optional = target.endswith("?")
             if optional:
                 target = target[:-1]
-            count = len(tasks)
 
-            if ":" not in target:
-                # Select all targets with a name matching the specified target.
-                tasks.extend(
-                    task for project in self.iter_projects() for task in project.tasks().values() if task.name == target
-                )
-                if not optional:
-                    _check_matched()
-                continue
+            # Find the project to look for matching tasks in.
+            project_ref, name = target.rpartition(":")[::2]
+            project = self.get_project(project_ref, relative_to)
 
-            # Resolve as many components in the project hierarchy as possible.
-            project = relative_to
-            parts = target.split(":")
-            if parts[0] == "":
-                project = self.root_project
-                parts.pop(0)
-            while parts:
-                if project.has_subproject(parts[0]):
-                    project = project.subproject(parts.pop(0))
-                else:
-                    break
+            # Find all matching tasks in all subprojects.
+            matched_tasks = [
+                task
+                for project in self.iter_projects(project)
+                for task in project.tasks().values()
+                if task.name == name
+            ]
 
-            project_tasks = project.tasks()
-            if not parts or parts == [""]:
-                # The project was selected, add all default tasks.
-                tasks.extend(task for task in project_tasks.values() if task.default)
-            elif len(parts) == 1:
-                # A specific target is selected.
-                if parts[0] not in project_tasks:
-                    if optional:
-                        continue
-                    raise ValueError(f"task {target!r} does not exist")
-                tasks.append(project_tasks[parts[0]])
-            else:
-                # Some project in the path does not exist.
+            if not matched_tasks:
                 if optional:
                     continue
-                raise ValueError(f"project {':'.join(target.split(':')[:-1])} does not exist")
+                raise ValueError(f"task {target} does not exist")
 
-            _check_matched()
+            tasks += matched_tasks
 
         return tasks
 
@@ -257,11 +254,14 @@ class Context(MetadataContainer, Currentable["Context"]):
 
         self._finalized = True
         self.trigger(ContextEvent.Type.on_context_begin_finalize, self)
+
+        # Delegate to finalize calls in all tasks of all projects.
         for project in self.iter_projects():
             self.trigger(ContextEvent.Type.on_project_begin_finalize, project)
             for task in project.tasks().values():
                 task.finalize()
             self.trigger(ContextEvent.Type.on_project_finalized, project)
+
         self.trigger(ContextEvent.Type.on_context_finalized, self)
 
     def get_build_graph(self, targets: Sequence[str | Task] | None) -> TaskGraph:

@@ -11,6 +11,7 @@ from kraken.core.cli.main import _load_build_state
 from kraken.core.cli.option_sets import BuildOptions, GraphOptions
 from kraken.core.executor.colored import ColoredDefaultPrintingExecutorObserver
 from kraken.core.task import Task, TaskStatus, TaskStatusType
+from tests.utils import chdir_context
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ def test_resume_build_state(tempdir: Path) -> None:
 
         render_file(name="a", file=project.build_directory / "a.txt", content="This is file a.txt")
         render_file(name="b", file=project.build_directory / "b.txt", content="This is file b.txt")
-        render_file(name="c", file=project.build_directory / "c.txt", content="This is file c.txt")
+        render_file(name="c", file=project.build_directory / "c.txt", content="This is file b.txt")
 
         project.task("c").add_relationship("a")
         project.task("c").add_relationship("b")
@@ -66,7 +67,7 @@ def test_resume_build_state(tempdir: Path) -> None:
     )
 
     logger.info('Executing task "a"')
-    with ExitStack() as exit_stack:
+    with ExitStack() as exit_stack, chdir_context(tempdir):
         graph_options = GraphOptions(["a"], resume=False, restart=False, no_save=False, all=False)
         context, graph = _load_build_state(exit_stack, build_options, graph_options)
 
@@ -80,8 +81,11 @@ def test_resume_build_state(tempdir: Path) -> None:
         assert graph.get_status(graph.get_task(":b")) is None
         assert graph.get_status(graph.get_task(":c")) is None
 
+        assert (build_options.build_dir / "a.txt").is_file()
+
     logger.info('Executing task "b"')
-    with ExitStack() as exit_stack:
+    with ExitStack() as exit_stack, chdir_context(tempdir):
+
         graph_options = GraphOptions(["b"], resume=True, restart=False, no_save=False, all=False)
         context, graph = _load_build_state(exit_stack, build_options, graph_options)
 
@@ -100,7 +104,8 @@ def test_resume_build_state(tempdir: Path) -> None:
         assert graph.get_status(graph.get_task(":c")) is None
 
     logger.info('Executing task "c"')
-    with ExitStack() as exit_stack:
+    with ExitStack() as exit_stack, chdir_context(tempdir):
+
         graph_options = GraphOptions(["c"], resume=True, restart=False, no_save=False, all=False)
         context, graph = _load_build_state(exit_stack, build_options, graph_options)
 
@@ -124,7 +129,7 @@ def test_resume_build_state(tempdir: Path) -> None:
 
     logger.info('Confirm that executing task "c" without prior state would execute "a" and "b" as well')
     safe_rmpath(build_options.build_dir)
-    with ExitStack() as exit_stack:
+    with ExitStack() as exit_stack, chdir_context(tempdir):
         graph_options = GraphOptions(["c"], resume=False, restart=False, no_save=False, all=False)
         context, graph = _load_build_state(exit_stack, build_options, graph_options)
 

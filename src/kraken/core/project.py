@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional, Type, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional, Type, TypeVar, cast, overload
 
 from deprecated import deprecated
 
@@ -109,7 +109,15 @@ class Project(MetadataContainer, Currentable["Project"]):
     def subprojects(self) -> Mapping[str, Project]:
         return {p.name: p for p in self._members.values() if isinstance(p, Project)}
 
+    @overload
     def subproject(self, name: str) -> Project:
+        ...
+
+    @overload
+    def subproject(self, name: str, load: bool) -> Project | None:
+        ...
+
+    def subproject(self, name: str, load: bool = True) -> Project | None:
         """
         Returns the subproject of this project that has the specified *name*. If no such subproject exists yet,
         it will be created and loaded, however a folder of that *name* must exist. If the folder contains a Kraken
@@ -121,6 +129,9 @@ class Project(MetadataContainer, Currentable["Project"]):
             if not isinstance(obj, Project):
                 raise ValueError(f"{self.path}:{name} does not refer to a project (got {type(obj).__name__} instead)")
             return obj
+
+        if not load:
+            return None
 
         directory = self.directory / name
         if not directory.is_dir():
