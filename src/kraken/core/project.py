@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional, Type, TypeVar, cast, overload
 
+import builddsl
 from deprecated import deprecated
 
 from kraken.core.base import Currentable, MetadataContainer
@@ -203,7 +204,8 @@ class Project(MetadataContainer, Currentable["Project"]):
         self,
         name: str,
         task_type: Type[T_Task] = cast(Any, Task),
-        default: bool | None = None,
+        default: bool | builddsl.UnboundClosure | None = None,
+        *,
         group: str | GroupTask | None = None,
         description: str | None = None,
         **kwargs: Any,
@@ -212,7 +214,7 @@ class Project(MetadataContainer, Currentable["Project"]):
 
         :param name: The name of the task to add.
         :param task_type: The type of task to add.
-        :param default: Override :attr:`Task.default`.
+        :param default: Override :attr:`Task.default`, or a closure to invoke with the created task.
         :param group: Add the task to the given group in the project.
         :param kwargs: Any number of properties to set on the task. Unknown properties will be ignored
             with a warning log.
@@ -223,11 +225,13 @@ class Project(MetadataContainer, Currentable["Project"]):
             raise ValueError(f"{self} already has a member {name!r}")
 
         task = task_type(name, self)
-        if default is not None:
+        if default is not None and not isinstance(default, builddsl.UnboundClosure):
             task.default = default
         if description is not None:
             task.description = description
         task.update(**kwargs)
+        if isinstance(default, builddsl.UnboundClosure):
+            default(task)
         self.add_task(task)
         if isinstance(group, str):
             group = self.group(group)

@@ -15,3 +15,9 @@ id = "0f9b698b-bc8d-48c3-9d9e-77d9e77ef3b5"
 type = "feature"
 description = "using the `-p,--project-dir` option now has Kraken change directory to the specified path but by default only select tasks in the respective subproject represented by the current working directory and relative task references are taken relative to that subproject as well"
 author = "@NiklasRosenstein"
+
+[[entries]]
+id = "3522931f-54d3-455d-bb15-2016f7780562"
+type = "feature"
+description = "`Project.do()` now accepts a `builddsl.UnboundClosure` as third argument (overlapping with the `default` argument)"
+author = "@NiklasRosenstein"
