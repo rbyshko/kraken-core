@@ -225,8 +225,8 @@ class Context(MetadataContainer, Currentable["Context"]):
                 target = target[:-1]
 
             # Find the project to look for matching tasks in.
-            project_ref, name = target.rpartition(":")[::2]
-            project = self.get_project(project_ref, relative_to)
+            project_ref, sep, name = target.rpartition(":")
+            project = self.get_project(project_ref or sep, relative_to)
 
             # Find all matching tasks in all subprojects.
             matched_tasks = [
