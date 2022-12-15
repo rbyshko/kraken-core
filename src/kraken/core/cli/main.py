@@ -12,10 +12,10 @@ from typing import TYPE_CHECKING, Any, NoReturn
 
 from kraken.common import (
     BuildscriptMetadata,
+    CurrentDirectoryProjectFinder,
     RequirementSpec,
     appending_to_sys_path,
     deprecated_get_requirement_spec_from_file_header,
-    find_build_script,
 )
 
 if TYPE_CHECKING:
@@ -103,16 +103,14 @@ def _load_build_state(
     if graph_options.restart and not graph_options.resume:
         raise ValueError("the --restart option requires the --resume flag")
 
-    runner, script = find_build_script(build_options.project_dir)
-    if not runner:
+    project_info = CurrentDirectoryProjectFinder.default().find_project(Path.cwd())
+    if not project_info:
 
         # We are OKAY with resuming a build from serialized state files even if no build script exists in the
         # current working directory; this is a feature that is often useful for debugging purposes when you want
         # to inspect the final state of a build, like from CI.
         if not graph_options.resume:
             raise ValueError(f'no Kraken build script found in the directory "{build_options.project_dir}"')
-    else:
-        assert script is not None
 
     # Before we can deserialize the build state, we must add the additional paths to `sys.path` that are defined
     # in by the script using the buildscript() function, or for backwards compatibility, in the file header as
@@ -122,20 +120,18 @@ def _load_build_state(
     # we can rely on the buildscript() call in the script to update `sys.path`; but if the deprecated file header
     # is used to define the pythonpath we still need to parse it explicitly.
 
-    if script:
-        assert runner is not None
-
+    if project_info:
         # Attempt to read the requirement spec in the deprecated format first.
-        requirements = deprecated_get_requirement_spec_from_file_header(script)
+        requirements = deprecated_get_requirement_spec_from_file_header(project_info.script)
 
         # If the file does not have the deprecated requirement spec file header as comments, we instead want
         # to capture the buildscript() call by tenatively executing the script. However, we only need to do
         # this if we want to resume from a serialized build state. When we need to execute the full script
         # anyway, we can rely on a callback that we register for when buildscript() is called to update
         # the `sys.path`, which avoids that we execute the script twice.
-        if not requirements and graph_options.resume and runner.has_buildscript_call(script):
+        if not requirements and graph_options.resume and project_info.runner.has_buildscript_call(project_info.script):
             with BuildscriptMetadata.capture() as future:
-                runner.execute_script(script, {})
+                project_info.runner.execute_script(project_info.script, {})
             assert future.done()
             requirements = RequirementSpec.from_metadata(future.result())
 

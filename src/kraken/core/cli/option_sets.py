@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     import argparse
 
 DEFAULT_BUILD_DIR = Path("build")
-DEFAULT_PROJECT_DIR = Path(".")
 BUILD_STATE_DIR = ".kraken/buildenv"
 
 
@@ -38,8 +37,12 @@ class BuildOptions:
             "--project-dir",
             metavar="PATH",
             type=Path,
-            default=DEFAULT_PROJECT_DIR,
-            help="the root project directory [default: ./]",
+            default=Path.cwd(),
+            help="the root directory of the project. If this is specified, it should point to an existing directory "
+            "that contains a build script and it must be the same or a parent of the current directory. When "
+            "invoked with this option, task references are resolved relative to the Kraken project that is "
+            "represented by the current working directory. (note: this option is automatically passed when using "
+            "kraken-wrapper as it finds the respective project automatically).",
         )
         group.add_argument(
             "--state-name",

@@ -19,7 +19,7 @@ from typing import (
     overload,
 )
 
-from kraken.common import ScriptRunner
+from kraken.common import CurrentDirectoryProjectFinder, ProjectFinder, ScriptRunner
 from typing_extensions import TypeAlias
 
 from kraken.core.base import Currentable, MetadataContainer
@@ -62,11 +62,14 @@ class Context(MetadataContainer, Currentable["Context"]):
     def __init__(
         self,
         build_directory: Path,
+        project_finder: ProjectFinder | None = None,
         executor: GraphExecutor | None = None,
         observer: GraphExecutorObserver | None = None,
     ) -> None:
         """
         :param build_directory: The directory in which all files generated durin the build should be stored.
+        :param project_finder: This project finder should only search within the directory it was given, not
+            around or in parent folders. Defaults to :class:`CurrentDirectoryProjectFinder`.
         :param executor: The executor to use when the graph is executed.
         :param observer: The executro observer to use when the graph is executed.
         """
@@ -79,6 +82,7 @@ class Context(MetadataContainer, Currentable["Context"]):
 
         super().__init__()
         self.build_directory = build_directory
+        self.project_finder = project_finder or CurrentDirectoryProjectFinder.default()
         self.executor = executor or DefaultGraphExecutor(DefaultTaskExecutor())
         self.observer = observer or DefaultPrintingExecutorObserver()
         self._finalized: bool = False
@@ -117,14 +121,14 @@ class Context(MetadataContainer, Currentable["Context"]):
             specified without a *runner*.
         """
 
-        from kraken.common import find_build_script
-
         from kraken.core.project import Project, ProjectLoaderError
 
         if not runner:
             if script is not None:
                 raise ValueError("cannot specify `script` parameter without a `runner` parameter")
-            runner, script = find_build_script(directory)
+            project_info = self.project_finder.find_project(directory)
+            if project_info is not None:
+                script, runner = project_info
         if not script and runner:
             script = runner.find_script(directory)
 
@@ -141,7 +145,10 @@ class Context(MetadataContainer, Currentable["Context"]):
                     self._root_project = project
 
                 if script is None and require_buildscript:
-                    raise ProjectLoaderError(project, f"no buildscript found for {project}")
+                    raise ProjectLoaderError(
+                        project,
+                        f"no buildscript found for {project} (directory: {project.directory.absolute().resolve()})",
+                    )
                 if script is not None:
                     assert runner is not None
                     runner.execute_script(script, {"project": project})
