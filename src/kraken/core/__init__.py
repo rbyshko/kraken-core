@@ -1,4 +1,4 @@
-__version__ = "0.11.4"
+__version__ = "0.11.5"
 
 # NOTE(NiklasRosenstein): Imports from `kraken.core` directly are deprecated; instead you should import
 #   from `kraken.core.api`. This file will not be updated until the next release with breaking changes
