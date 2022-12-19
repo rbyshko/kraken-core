@@ -48,7 +48,7 @@ docs = ["mkdocs", "mkdocs-material", "novella==0.2.3", "pydoc-markdown==4.6.3"]
 testing = ["pytest"]
 
 [tool.poetry.plugins."pytest11"]
-"kraken.core.test" = "kraken.core.test"
+"kraken.core.testing" = "kraken.core.testing"
 
 [tool.poetry.scripts]
 kraken = "kraken.core.cli.main:main"

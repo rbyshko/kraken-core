@@ -4,8 +4,6 @@ from typing import Iterator
 
 from pytest import fixture
 
-from kraken.core.test import kraken_project  # noqa: F401
-
 
 @fixture
 def tempdir() -> Iterator[Path]:

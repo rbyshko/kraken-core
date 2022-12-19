@@ -14,7 +14,11 @@ from kraken.core.system.project import Project
 if TYPE_CHECKING:
     from _pytest.fixtures import FixtureRequest
 
-__version__ = "0.8.11"
+__all__ = [
+    "kraken_ctx",
+    "kraken_project",
+]
+
 logger = logging.getLogger(__name__)
 
 
