@@ -1,7 +1,7 @@
 [[entries]]
 id = "2ae4cd9f-b3ec-452a-9c81-411bf26add4d"
 type = "improvement"
-description = "upgrade to kraken-common 0.5.0"
+description = "upgrade to kraken-common 0.5.2"
 author = "@NiklasRosenstein"
 
 [[entries]]
