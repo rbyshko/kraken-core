@@ -1,4 +1,4 @@
-__version__ = "0.11.1"
+__version__ = "0.11.2"
 
 from kraken.core.context import BuildError, Context, ContextEvent
 from kraken.core.executor import Graph, GraphExecutor, GraphExecutorObserver
