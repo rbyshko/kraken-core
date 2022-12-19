@@ -7,10 +7,10 @@ import builddsl
 from deprecated import deprecated
 
 from kraken.core.base import Currentable, MetadataContainer
-from kraken.core.task import GroupTask, Task, TaskSet
+from kraken.core.system.task import GroupTask, Task, TaskSet
 
 if TYPE_CHECKING:
-    from kraken.core.context import Context
+    from kraken.core.system.context import Context
 
 T = TypeVar("T")
 T_Task = TypeVar("T_Task", bound="Task")

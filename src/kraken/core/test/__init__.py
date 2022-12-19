@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Iterator
 
 import pytest
 
-from kraken.core.context import Context
-from kraken.core.project import Project
+from kraken.core.system.context import Context
+from kraken.core.system.project import Project
 
 if TYPE_CHECKING:
     from _pytest.fixtures import FixtureRequest

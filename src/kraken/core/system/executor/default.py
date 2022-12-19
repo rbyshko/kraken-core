@@ -8,9 +8,9 @@ import traceback
 from functools import partial
 from typing import Callable, Iterable
 
-from kraken.core.executor import Graph, GraphExecutor, GraphExecutorObserver
-from kraken.core.executor.utils import TaskRememberer
-from kraken.core.task import GroupTask, Task, TaskStatus, VoidTask
+from kraken.core.system.executor import Graph, GraphExecutor, GraphExecutorObserver
+from kraken.core.system.executor.utils import TaskRememberer
+from kraken.core.system.task import GroupTask, Task, TaskStatus, VoidTask
 
 
 class TaskExecutor(abc.ABC):

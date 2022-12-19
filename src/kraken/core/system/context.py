@@ -23,13 +23,13 @@ from kraken.common import CurrentDirectoryProjectFinder, ProjectFinder, ScriptRu
 from typing_extensions import TypeAlias
 
 from kraken.core.base import Currentable, MetadataContainer
-from kraken.core.executor import GraphExecutorObserver
+from kraken.core.system.executor import GraphExecutorObserver
 
 if TYPE_CHECKING:
-    from kraken.core.executor import GraphExecutor
-    from kraken.core.graph import TaskGraph
-    from kraken.core.project import Project
-    from kraken.core.task import Task
+    from kraken.core.system.executor import GraphExecutor
+    from kraken.core.system.graph import TaskGraph
+    from kraken.core.system.project import Project
+    from kraken.core.system.task import Task
 
 logger = logging.getLogger(__name__)
 T = TypeVar("T")
@@ -74,7 +74,7 @@ class Context(MetadataContainer, Currentable["Context"]):
         :param observer: The executro observer to use when the graph is executed.
         """
 
-        from kraken.core.executor.default import (
+        from kraken.core.system.executor.default import (
             DefaultGraphExecutor,
             DefaultPrintingExecutorObserver,
             DefaultTaskExecutor,
@@ -121,7 +121,7 @@ class Context(MetadataContainer, Currentable["Context"]):
             specified without a *runner*.
         """
 
-        from kraken.core.project import Project, ProjectLoaderError
+        from kraken.core.system.project import Project, ProjectLoaderError
 
         if not runner:
             if script is not None:
@@ -272,7 +272,7 @@ class Context(MetadataContainer, Currentable["Context"]):
         :raise ValueError: If not tasks were selected.
         """
 
-        from kraken.core.graph import TaskGraph
+        from kraken.core.system.graph import TaskGraph
 
         if targets is None:
             tasks = self.resolve_tasks(None)
@@ -299,7 +299,7 @@ class Context(MetadataContainer, Currentable["Context"]):
         :raise BuildError: If any task fails to execute.
         """
 
-        from kraken.core.graph import TaskGraph
+        from kraken.core.system.graph import TaskGraph
 
         if isinstance(tasks, TaskGraph):
             assert self._finalized, "no, no, this is all wrong. you need to finalize the context first"

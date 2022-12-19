@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
-from kraken.core.project import Project
-from kraken.core.property import Property
-from kraken.core.task import Task, VoidTask
+from kraken.core.system.project import Project
+from kraken.core.system.property import Property
+from kraken.core.system.task import Task, VoidTask
 
 
 @dataclass

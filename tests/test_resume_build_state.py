@@ -9,8 +9,8 @@ from pytest import mark
 
 from kraken.core.cli.main import _load_build_state
 from kraken.core.cli.option_sets import BuildOptions, GraphOptions
-from kraken.core.executor.colored import ColoredDefaultPrintingExecutorObserver
-from kraken.core.task import Task, TaskStatus, TaskStatusType
+from kraken.core.system.executor.colored import ColoredDefaultPrintingExecutorObserver
+from kraken.core.system.task import Task, TaskStatus, TaskStatusType
 from tests.utils import chdir_context
 
 logger = logging.getLogger(__name__)

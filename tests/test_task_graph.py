@@ -1,8 +1,8 @@
 import pytest
 
-from kraken.core.graph import TaskGraph
-from kraken.core.project import Project
-from kraken.core.task import TaskStatus, VoidTask
+from kraken.core.system.graph import TaskGraph
+from kraken.core.system.project import Project
+from kraken.core.system.task import TaskStatus, VoidTask
 
 
 def test__TaskGraph__populate(kraken_project: Project) -> None:
@@ -195,7 +195,7 @@ def test__TaskGraph__test_inverse_group_relationship(kraken_project: Project, in
         `A -> B` should yield the same result as `B <- A`.
     """
 
-    from kraken.core.graph import _Edge
+    from kraken.core.system.graph import _Edge
 
     a = kraken_project.group("a")
     b = kraken_project.group("b")

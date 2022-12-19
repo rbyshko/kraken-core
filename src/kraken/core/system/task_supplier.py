@@ -2,17 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Iterable
 
-from nr.stream import Supplier  # For backwards compatibility with kraken-core<=0.10.13
+from nr.stream import Supplier
 
-Empty = Supplier.Empty  # For backwards compatibility with kraken-core<=0.10.13
-
-__all__ = [
-    "Supplier",
-    "Empty",
-]
+__all__ = ["TaskSupplier"]
 
 if TYPE_CHECKING:
-    from kraken.core.task import Task
+    from kraken.core.system.task import Task
 
 
 class TaskSupplier(Supplier["Task"]):

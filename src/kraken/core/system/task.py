@@ -32,11 +32,11 @@ from typing import (
 
 from nr.stream import Supplier
 
-from kraken.core.property import Object, Property
-from kraken.core.supplier import TaskSupplier
+from kraken.core.system.property import Object, Property
+from kraken.core.system.task_supplier import TaskSupplier
 
 if TYPE_CHECKING:
-    from kraken.core.project import Project
+    from kraken.core.system.project import Project
 else:
     if sys.version_info[:2] == (3, 9):
         # Type hint evaluation tries to fully resolve forward references to a type. In order to allow the property

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from kraken.core.property import Object, Property
+from kraken.core.system.property import Object, Property
 
 
 def test__Property_value_adapter_order_is_semantically_revelant() -> None:

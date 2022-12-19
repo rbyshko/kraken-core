@@ -6,7 +6,7 @@ import abc
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from kraken.core.task import Task, TaskStatus
+    from kraken.core.system.task import Task, TaskStatus
 
 
 class Graph(abc.ABC):

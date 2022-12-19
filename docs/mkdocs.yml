@@ -2,6 +2,7 @@ nav:
   - Home: index.md
   - changelog.md
   - Documentation:
+    - docs/api.md
     - docs/tasks.md
     - docs/project.md
   - Synopsis:

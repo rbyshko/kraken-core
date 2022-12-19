@@ -7,9 +7,9 @@ from typing import Iterable, Iterator, List, Sequence, cast
 from kraken.common import not_none
 from networkx import DiGraph, restricted_view, transitive_reduction
 
-from kraken.core.context import Context
-from kraken.core.executor import Graph
-from kraken.core.task import GroupTask, Task, TaskStatus
+from kraken.core.system.context import Context
+from kraken.core.system.executor import Graph
+from kraken.core.system.task import GroupTask, Task, TaskStatus
 
 logger = logging.getLogger(__name__)
 

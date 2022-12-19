@@ -3,7 +3,7 @@ from __future__ import annotations
 import threading
 from typing import NamedTuple
 
-from kraken.core.task import Task
+from kraken.core.system.task import Task
 
 
 class TaskRememberer:

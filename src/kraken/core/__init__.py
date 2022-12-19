@@ -1,12 +1,17 @@
 __version__ = "0.11.2"
 
-from kraken.core.context import BuildError, Context, ContextEvent
-from kraken.core.executor import Graph, GraphExecutor, GraphExecutorObserver
-from kraken.core.graph import TaskGraph
-from kraken.core.project import Project, ProjectLoaderError
-from kraken.core.property import Property
-from kraken.core.supplier import Supplier
-from kraken.core.task import (
+# NOTE(NiklasRosenstein): Imports from `kraken.core` directly are deprecated; instead you should import
+#   from `kraken.core.api`. This file will not be updated until the next release with breaking changes
+#   which will completely clear the contents of the module.
+
+from nr.stream import Supplier
+
+from kraken.core.system.context import BuildError, Context, ContextEvent
+from kraken.core.system.executor import Graph, GraphExecutor, GraphExecutorObserver
+from kraken.core.system.graph import TaskGraph
+from kraken.core.system.project import Project, ProjectLoaderError
+from kraken.core.system.property import Property
+from kraken.core.system.task import (
     BackgroundTask,
     GroupTask,
     Task,

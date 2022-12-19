@@ -1,0 +1,5 @@
+[[entries]]
+id = "0c121da7-a451-4fba-81fa-fb57ad3ccaf9"
+type = "improvement"
+description = "Refactor, moving `kraken.core.{executor,context,graph,project,property,supplier,task}` to `kraken.core.system` subpackage (renaming `supplier` to `task_supplier`). Added the `kraken.core.api` module which should be used for public imports, any imports from members of the `kraken.core` package not from `kraken.core.api` are not officially supported."
+author = "@NiklasRosenstein"

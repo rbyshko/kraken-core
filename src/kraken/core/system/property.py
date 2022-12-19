@@ -20,7 +20,7 @@ class PropertyConfig:
 
     .. code:: Example
 
-        from kraken.core.property import Object, Property, output
+        from kraken.core.system.property import Object, Property, output
         from typing_extensions import Annotated
 
         class MyObj(Object):
@@ -71,7 +71,7 @@ class Property(Supplier[T]):
 
         .. code:: Example
 
-            from kraken.core.property import Object, Property, output
+            from kraken.core.system.property import Object, Property, output
 
             class MyObj(Object):
                 a: Property[int] = output()
@@ -91,7 +91,7 @@ class Property(Supplier[T]):
 
         .. code:: Example
 
-            from kraken.core.property import Object, Property, config
+            from kraken.core.system.property import Object, Property, config
 
             class MyObj(Object):
                 a: Property[int] = config(default=42)
