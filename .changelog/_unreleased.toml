@@ -1,0 +1,8 @@
+[[entries]]
+id = "57eb49a7-53d2-4049-8ddc-c7cf5a423212"
+type = "feature"
+description = "Add update lockfile task group"
+author = "@rbyshko"
+issues = [
+    "https://github.com/rbyshko/kraken-core/issues/18",
+]
