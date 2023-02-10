@@ -120,7 +120,6 @@ def _load_build_state(
 
     project_info = CurrentDirectoryProjectFinder.default().find_project(Path.cwd())
     if not project_info:
-
         # We are OKAY with resuming a build from serialized state files even if no build script exists in the
         # current working directory; this is a feature that is often useful for debugging purposes when you want
         # to inspect the final state of a build, like from CI.
@@ -168,7 +167,6 @@ def _load_build_state(
 
     # Otherwise, we need to execute the build script.
     else:
-
         if build_options.no_load_project:
             raise ValueError(
                 "no existing build state was loaded; typically that would load the root project "
@@ -222,7 +220,6 @@ def run(
     graph_options: GraphOptions,
     run_options: RunOptions,
 ) -> None:
-
     from kraken.core import BuildError
     from kraken.core.cli.executor import ColoredDefaultPrintingExecutorObserver
 

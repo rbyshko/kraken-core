@@ -47,7 +47,6 @@ class ContextEventType(enum.Enum):
 
 @dataclasses.dataclass
 class ContextEvent:
-
     Type: ClassVar[TypeAlias] = ContextEventType
     Listener = Callable[["ContextEvent"], Any]
     T_Listener = TypeVar("T_Listener", bound=Listener)
@@ -218,7 +217,6 @@ class Context(MetadataContainer, Currentable["Context"]):
         target: str
 
         for target in targets:
-
             # Target references followed by a question mark are optional, they are allowed to not resolve.
             optional = target.endswith("?")
             if optional:

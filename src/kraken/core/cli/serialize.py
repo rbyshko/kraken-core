@@ -16,7 +16,6 @@ state_file_template = "state-{name}.dill"
 
 
 def load_build_state(state_dirs: Iterable[Path]) -> tuple[Context, TaskGraph] | tuple[None, None]:
-
     # Find all state files that match the state filename format.
     state_files = []
     for state_dir in state_dirs:

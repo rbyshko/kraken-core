@@ -85,7 +85,6 @@ def test_resume_build_state(tempdir: Path) -> None:
 
     logger.info('Executing task "b"')
     with ExitStack() as exit_stack, chdir_context(tempdir):
-
         graph_options = GraphOptions(["b"], resume=True, restart=False, no_save=False, all=False)
         context, graph = _load_build_state(exit_stack, build_options, graph_options)
 
@@ -105,7 +104,6 @@ def test_resume_build_state(tempdir: Path) -> None:
 
     logger.info('Executing task "c"')
     with ExitStack() as exit_stack, chdir_context(tempdir):
-
         graph_options = GraphOptions(["c"], resume=True, restart=False, no_save=False, all=False)
         context, graph = _load_build_state(exit_stack, build_options, graph_options)
 

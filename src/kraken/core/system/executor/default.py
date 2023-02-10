@@ -54,7 +54,6 @@ class DefaultGraphExecutor(GraphExecutor):
         self._task_executor = task_executor
 
     def execute_graph(self, graph: Graph, observer: GraphExecutorObserver) -> None:
-
         remember = TaskRememberer()
         interrupted = False
 
