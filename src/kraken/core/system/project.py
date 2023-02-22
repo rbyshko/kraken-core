@@ -78,7 +78,7 @@ class Project(MetadataContainer, Currentable["Project"]):
         deploy_group = self.group("deploy", description="Tasks that deploy applications.")
         deploy_group.add_relationship(publish_group, strict=False)
 
-        self.group("update", description="Tasks that update dependencies of projects.")
+        self.group("update", description="Tasks that update dependencies of the project.")
 
     def __repr__(self) -> str:
         return f"Project({self.path})"
