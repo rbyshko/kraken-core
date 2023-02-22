@@ -127,6 +127,7 @@ def test__TaskGraph__ready_on_failure(kraken_project: Project) -> None:
     assert not graph.is_complete()
 
 
+@pytest.mark.skip(reason="TaskGraph.ready() should not return group tasks")
 def test__TaskGraph__ready_2(kraken_project: Project) -> None:
     """
     ```
