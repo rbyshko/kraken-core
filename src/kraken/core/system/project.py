@@ -53,20 +53,27 @@ class Project(MetadataContainer, Currentable["Project"]):
 
         check_group = self.group("check", description="Tasks that perform project consistency checks.", default=True)
 
+        gen_group = self.group("gen", description="Tasks that perform code generation.", default=True)
+
         lint_group = self.group("lint", description="Tasks that perform code linting.", default=True)
         lint_group.add_relationship(check_group, strict=True)
+        lint_group.add_relationship(gen_group, strict=True)
 
         build_group = self.group("build", description="Tasks that produce build artefacts.")
         build_group.add_relationship(lint_group, strict=False)
+        build_group.add_relationship(gen_group, strict=True)
 
         test_group = self.group("test", description="Tasks that perform unit tests.", default=True)
         test_group.add_relationship(build_group, strict=False)
+        test_group.add_relationship(gen_group, strict=True)
 
         integration_test_group = self.group("integrationTest", description="Tasks that perform integration tests.")
         integration_test_group.add_relationship(test_group, strict=False)
+        integration_test_group.add_relationship(gen_group, strict=True)
 
         publish_group = self.group("publish", description="Tasks that publish build artefacts.")
         publish_group.add_relationship(integration_test_group, strict=False)
+        publish_group.add_relationship(build_group, strict=True)
 
         deploy_group = self.group("deploy", description="Tasks that deploy applications.")
         deploy_group.add_relationship(publish_group, strict=False)

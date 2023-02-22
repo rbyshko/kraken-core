@@ -1,0 +1,11 @@
+[[entries]]
+id = "bf7c1156-f25c-4a75-9759-719789c7612e"
+type = "improvement"
+description = "Update dependencies of default groups in a `Project` (publish now strictly depends on build)"
+author = "@NiklasRosenstein"
+
+[[entries]]
+id = "d737d859-146a-441a-ac11-6ab374f3edf5"
+type = "improvement"
+description = "Add `gen` default group to `Project` (which `lint`, `test`, `integrationTest` and `build` depend on)"
+author = "@NiklasRosenstein"
